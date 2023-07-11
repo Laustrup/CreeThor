@@ -1,5 +1,7 @@
 package laustrup.models;
 
+import laustrup.models.listeners.KeyListener;
+import laustrup.models.listeners.MouseListener;
 import laustrup.utilities.console.Printer;
 
 import lombok.Getter;
@@ -9,6 +11,7 @@ import lombok.ToString;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 
+import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -45,7 +48,7 @@ public class Window {
      * Needs to be initiated.
      */
     @Getter
-    private long _glfw;
+    private long _frame;
 
     /**
      * A constructor for the singleton.
@@ -75,6 +78,7 @@ public class Window {
         init();
         open();
         loop();
+        freeMemoryAndTerminate();
     }
 
     /**
@@ -90,13 +94,13 @@ public class Window {
 
         configureGLFW();
 
-        _glfw = glfwCreateWindow(_width, _height, _title, NULL, NULL);
-        if (_glfw == NULL)
+        _frame = glfwCreateWindow(_width, _height, _title, NULL, NULL);
+        if (_frame == NULL)
             throw new IllegalStateException("Failed to create the GLFW");
         else
             Printer.get_instance().print(
                     """
-                        Window has been created with the values:
+                        Window has been initiated with the values:
                         
                         width = $width
                         height = $height"""
@@ -104,13 +108,14 @@ public class Window {
                 .replace("$height",String.valueOf(_height))
             );
 
+        configureListeners();
         configureOpenGL();
     }
 
     /** If the glfw isn't NULL, it will open the window and createCapabilities for GL. */
     public void open() {
-        if (_glfw != NULL) {
-            glfwShowWindow(_glfw);
+        if (_frame != NULL) {
+            glfwShowWindow(_frame);
             GL.createCapabilities();
         }
     }
@@ -125,8 +130,44 @@ public class Window {
 
     /** Configures the openGL with context and swapInterval that is of v-sync. */
     private void configureOpenGL() {
-        glfwMakeContextCurrent(_glfw);
+        glfwMakeContextCurrent(_frame);
         glfwSwapInterval(1); // v-sync
+    }
+
+    /**
+     * Configures listeners of keys and mouse.
+     * Will catch any auto collapse with a print.
+     */
+    private void configureListeners() {
+        configureKeys();
+        configureMouse();
+    }
+
+    /**
+     * Configures keys from KeyListener.
+     * Will catch any auto collapse with a print.
+     */
+    private void configureKeys() {
+        try {
+            glfwSetKeyCallback(_frame, KeyListener::keyCallback);
+        } catch (Exception e) {
+            Printer.get_instance().print("Trouble configuring keys at window...",e);
+        }
+    }
+
+    /**
+     * Configures mouse from MouseListener.
+     * Will catch any auto collapse with a print.
+     */
+    private void configureMouse() {
+        try {
+            glfwSetCursorPosCallback(_frame, MouseListener::positionCallback);
+            glfwSetMouseButtonCallback(_frame, MouseListener::buttonCallback);
+            glfwSetScrollCallback(_frame, MouseListener::scrollCallback);
+        }
+        catch (Exception e) {
+            Printer.get_instance().print("Trouble configuring mouse at window...",e);
+        }
     }
 
     /**
@@ -135,13 +176,21 @@ public class Window {
      * Then the window actions are acted and buffers will be swapped.
      */
     private void loop() {
-        while (!glfwWindowShouldClose(_glfw)) {
+        while (!glfwWindowShouldClose(_frame)) {
             glfwPollEvents();
 
-            glClearColor(1.0f,0.0f,0.0f,1.0f);
+            glClearColor(1f,1f,1f,1f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            glfwSwapBuffers(_glfw);
+            glfwSwapBuffers(_frame);
         }
+    }
+
+    /** Will free the memory and terminate the whole window. */
+    private void freeMemoryAndTerminate() {
+        glfwFreeCallbacks(_frame);
+        glfwDestroyWindow(_frame);
+        glfwTerminate();
+        glfwSetErrorCallback(null);
     }
 }
