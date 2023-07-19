@@ -47,13 +47,13 @@ public class KeyListener {
 
     /**
      * A callback function, that will be activated, when there is a change with one of the keys.
-     * @param frame The frame that will be affected.
+     * @param window The window that will be affected.
      * @param key The key that is changing effect.
      * @param scancode Can be used to scan the key.
      * @param action The action of the key.
      * @param mods Can modify the action.
      */
-    public static void keyCallback(long frame, int key, int scancode, int action, int mods) {
+    public static void keyCallback(long window, int key, int scancode, int action, int mods) {
         get_instance().keyPressed[key] = action == GLFW_PRESS;
         Printer.get_instance().print(
                 glfwGetKeyName(key,scancode) + " is " +

@@ -2,6 +2,10 @@ package laustrup.models;
 
 import laustrup.models.listeners.KeyListener;
 import laustrup.models.listeners.MouseListener;
+import laustrup.models.scenes.IScene;
+import laustrup.models.scenes.LevelEditorScene;
+import laustrup.models.scenes.LevelScene;
+import laustrup.utilities.TimeUtility;
 import laustrup.utilities.console.Printer;
 
 import lombok.Getter;
@@ -48,7 +52,11 @@ public class Window {
      * Needs to be initiated.
      */
     @Getter
-    private long _frame;
+    private long _window;
+
+    /** The current scene of this window. */
+    @Setter
+    private static IScene _scene;
 
     /**
      * A constructor for the singleton.
@@ -94,8 +102,8 @@ public class Window {
 
         configureGLFW();
 
-        _frame = glfwCreateWindow(_width, _height, _title, NULL, NULL);
-        if (_frame == NULL)
+        _window = glfwCreateWindow(_width, _height, _title, NULL, NULL);
+        if (_window == NULL)
             throw new IllegalStateException("Failed to create the GLFW");
         else
             Printer.get_instance().print(
@@ -114,8 +122,8 @@ public class Window {
 
     /** If the glfw isn't NULL, it will open the window and createCapabilities for GL. */
     public void open() {
-        if (_frame != NULL) {
-            glfwShowWindow(_frame);
+        if (_window != NULL) {
+            glfwShowWindow(_window);
             GL.createCapabilities();
         }
     }
@@ -130,7 +138,7 @@ public class Window {
 
     /** Configures the openGL with context and swapInterval that is of v-sync. */
     private void configureOpenGL() {
-        glfwMakeContextCurrent(_frame);
+        glfwMakeContextCurrent(_window);
         glfwSwapInterval(1); // v-sync
     }
 
@@ -149,7 +157,7 @@ public class Window {
      */
     private void configureKeys() {
         try {
-            glfwSetKeyCallback(_frame, KeyListener::keyCallback);
+            glfwSetKeyCallback(_window, KeyListener::keyCallback);
         } catch (Exception e) {
             Printer.get_instance().print("Trouble configuring keys at window...",e);
         }
@@ -161,9 +169,9 @@ public class Window {
      */
     private void configureMouse() {
         try {
-            glfwSetCursorPosCallback(_frame, MouseListener::positionCallback);
-            glfwSetMouseButtonCallback(_frame, MouseListener::buttonCallback);
-            glfwSetScrollCallback(_frame, MouseListener::scrollCallback);
+            glfwSetCursorPosCallback(_window, MouseListener::positionCallback);
+            glfwSetMouseButtonCallback(_window, MouseListener::buttonCallback);
+            glfwSetScrollCallback(_window, MouseListener::scrollCallback);
         }
         catch (Exception e) {
             Printer.get_instance().print("Trouble configuring mouse at window...",e);
@@ -176,20 +184,31 @@ public class Window {
      * Then the window actions are acted and buffers will be swapped.
      */
     private void loop() {
-        while (!glfwWindowShouldClose(_frame)) {
+        float beginning = TimeUtility.get_time(),
+              loopStart,
+              dt = 0;
+        set_scene(new LevelScene());
+
+        while (!glfwWindowShouldClose(_window)) {
+            loopStart = TimeUtility.get_time();
             glfwPollEvents();
 
             glClearColor(1f,1f,1f,1f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            glfwSwapBuffers(_frame);
+            _scene.update(dt);
+
+            glfwSwapBuffers(_window);
+            dt = TimeUtility.get_time() - loopStart;
         }
+
+        Printer.get_instance().print("Loop of frame \"" + _title + "\" ended and lasted " + ((int) (TimeUtility.get_time() - beginning)) + " seconds.");
     }
 
     /** Will free the memory and terminate the whole window. */
     private void freeMemoryAndTerminate() {
-        glfwFreeCallbacks(_frame);
-        glfwDestroyWindow(_frame);
+        glfwFreeCallbacks(_window);
+        glfwDestroyWindow(_window);
         glfwTerminate();
         glfwSetErrorCallback(null);
     }

@@ -87,11 +87,11 @@ public class MouseListener {
     /**
      * A callback function, that will be activated, when there is a change in the position of the mouse.
      * If the mouse is dragging, then it will print it.
-     * @param frame The frame that the cursor are on top of.
+     * @param window The window that the cursor are on top of.
      * @param x The new x value of the cursor.
      * @param y The new y value of the cursor.
      */
-    public static void positionCallback(long frame, double x, double y) {
+    public static void positionCallback(long window, double x, double y) {
         setLastPositions();
         setNewPositions(x,y);
         get_instance()._dragging = calculateDragging();
@@ -114,12 +114,12 @@ public class MouseListener {
     /**
      * A callback function, that will be called, when there is a change with the buttons of the mouse.
      * Prints the action of the button.
-     * @param frame The frame where the cursor is on top of.
+     * @param window The window where the cursor is on top of.
      * @param button The button index that is having a action.
      * @param action The action of the button.
      * @param mods A modifier, that can modify the action of the button.
      */
-    public static void buttonCallback(long frame, int button, int action, int mods) {
+    public static void buttonCallback(long window, int button, int action, int mods) {
         boolean isClicked = action == GLFW_PRESS && button < get_instance()._clicked.length,
                 isReleased = action == GLFW_RELEASE;
 
@@ -127,17 +127,17 @@ public class MouseListener {
         if (action == GLFW_RELEASE)
             get_instance()._dragging = false;
 
-        Printer.get_instance().print(glfwGetMouseButton(frame,button) + " is " + (isClicked ? "clicked" : (isReleased ? "released" : "unknown action")));
+        Printer.get_instance().print(glfwGetMouseButton(window,button) + " is " + (isClicked ? "clicked" : (isReleased ? "released" : "unknown action")));
     }
 
     /**
      * A callback function, that will be called, when there is a change with the scroll of the mouse.
      * Prints the new scroll values.
-     * @param frame The frame where the cursor is on top of.
+     * @param window The window where the cursor is on top of.
      * @param xOffset The change of the x-axis.
      * @param yOffset The change of the y-axis.
      */
-    public static void scrollCallback(long frame, double xOffset, double yOffset) {
+    public static void scrollCallback(long window, double xOffset, double yOffset) {
         get_instance()._scrollX = xOffset;
         get_instance()._scrollY = yOffset;
         Printer.get_instance().print("""
@@ -151,15 +151,15 @@ public class MouseListener {
     }
 
     /**
-     * When the frame ends, values of the mouse will have an effect.
+     * When the window ends, values of the mouse will have an effect.
      * Prints the configuration has been changed.
      */
-    public static void endFrame() {
+    public static void endwindow() {
         get_instance()._scrollX = 0;
         get_instance()._scrollY = 0;
         get_instance()._dx = get_instance()._x;
         get_instance()._dy = get_instance()._y;
-        Printer.get_instance().print("Mouse has had its configuration of the frame ending!");
+        Printer.get_instance().print("Mouse has had its configuration of the window ending!");
     }
 
     /**
