@@ -8,4 +8,5 @@ public class Scene {
 
     @Getter
     protected float _fps;
+
 }

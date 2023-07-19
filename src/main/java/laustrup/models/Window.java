@@ -55,8 +55,12 @@ public class Window {
     private long _window;
 
     /** The current scene of this window. */
-    @Setter
     private static IScene _scene;
+
+    private void set_scene(IScene scene) {
+        _scene = scene;
+        _scene.init();
+    }
 
     /**
      * A constructor for the singleton.
@@ -187,7 +191,7 @@ public class Window {
         float beginning = TimeUtility.get_time(),
               loopStart,
               dt = 0;
-        set_scene(new LevelScene());
+        set_scene(new LevelEditorScene());
 
         while (!glfwWindowShouldClose(_window)) {
             loopStart = TimeUtility.get_time();

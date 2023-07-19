@@ -12,4 +12,9 @@ public class LevelScene extends Scene implements IScene {
     public void update(float dt) {
         _fps = 1.0f/dt;
     }
+
+    @Override
+    public void init() {
+
+    }
 }
