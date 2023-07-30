@@ -8,3 +8,5 @@ Name origins from the native american clan Cree and the Assa god Thor, which tog
 * [Utilities](https://github.com/Laustrup/Utilities/tree/master/Maven)
 
 * [Quality Assurance](https://github.com/Laustrup/QualityAssurance/tree/master/Maven)
+
+Uses glsl, so a plugin for the scripting would be useful.

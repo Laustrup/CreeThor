@@ -140,14 +140,14 @@ public class MouseListener {
     public static void scrollCallback(long window, double xOffset, double yOffset) {
         get_instance()._scrollX = xOffset;
         get_instance()._scrollY = yOffset;
-        Printer.get_instance().print("""
-                Scroll values are:
-                
-                x = $x
-                y = $y"""
-                .replace("$x",String.valueOf(get_instance()._scrollX))
-                .replace("$Y",String.valueOf(get_instance()._scrollY))
-        );
+//        Printer.get_instance().print("""
+//                Scroll values are:
+//
+//                x = $x
+//                y = $y"""
+//                .replace("$x",String.valueOf(get_instance()._scrollX))
+//                .replace("$Y",String.valueOf(get_instance()._scrollY))
+//        );
     }
 
     /**
@@ -179,17 +179,17 @@ public class MouseListener {
     private static void setNewPositions(double x, double y) {
         get_instance()._x = x;
         get_instance()._y = y;
-        Printer.get_instance().print("""
-                New positions are:
-                
-                x = $x
-                y = $y
-                dx = $dx
-                dy = $dy"""
-                .replace("$x",String.valueOf(get_instance()._x))
-                .replace("$y",String.valueOf(get_instance()._y))
-                .replace("$dx",String.valueOf(get_instance()._dx))
-                .replace("$dy",String.valueOf(get_instance()._dy))
-        );
+//        Printer.get_instance().print("""
+//                New positions are:
+//
+//                x = $x
+//                y = $y
+//                dx = $dx
+//                dy = $dy"""
+//                .replace("$x",String.valueOf(get_instance()._x))
+//                .replace("$y",String.valueOf(get_instance()._y))
+//                .replace("$dx",String.valueOf(get_instance()._dx))
+//                .replace("$dy",String.valueOf(get_instance()._dy))
+//        );
     }
 }
