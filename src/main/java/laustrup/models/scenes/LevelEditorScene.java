@@ -1,13 +1,17 @@
 package laustrup.models.scenes;
 
 import laustrup.Program;
-import laustrup.models.graphic.Element;
+import laustrup.models.graphic.fragment.Fragment;
 import laustrup.models.graphic.Vertex;
+import laustrup.models.graphic.fragment.FragmentCollection;
 import laustrup.services.FileService;
+import laustrup.utilities.FragmentUtility;
+import laustrup.utilities.VertexUtility;
 import laustrup.utilities.collections.lists.Liszt;
 import laustrup.utilities.console.Printer;
 
 import lombok.Getter;
+
 import org.lwjgl.BufferUtils;
 
 import java.nio.FloatBuffer;
@@ -20,6 +24,7 @@ import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class LevelEditorScene extends Scene implements IScene {
 
+    /** Defines the options of Shaders. */
     private enum Shader {
         VERTEX("vertex"),
         FRAGMENT("fragment");
@@ -31,21 +36,23 @@ public class LevelEditorScene extends Scene implements IScene {
         }
     }
 
-    private final String _vertexSource = defineShader(Shader.VERTEX), _fragmentSource = defineShader(Shader.FRAGMENT);
-    private int _vertexID, _fragmentID, _program, _vertexArrayObjectID, _vertexBufferObjectID, _elementBufferObjectID;
+    /**
+     * The source of a Vertex.
+     * Is defined from the default.glsl shader file.
+     */
+    private final String _vertexSource = defineShader(Shader.VERTEX);
 
-    private Liszt<Vertex> _vertexes = new Liszt<>(new Vertex[]{
-            new Vertex(new float[]{0.5f, -0.5f, 0.0f}, new float[]{1.0f, 0.0f, 0.0f, 1.0f}),
-            new Vertex(new float[]{-0.5f, 0.5f, 0.0f}, new float[]{0.0f, 1.0f, 0.0f, 1.0f}),
-            new Vertex(new float[]{0.5f, 0.5f, 0.0f}, new float[]{0.0f, 0.0f, 1.0f, 1.0f}),
-            new Vertex(new float[]{-0.5f, -0.5f, 0.0f}, new float[]{1.0f, 1.0f, 0.0f, 1.0f})
-    });
+    /**
+     * The source of a Vertex.
+     * Is defined from the default.glsl shader file.
+     */
+    private final String _fragmentSource = defineShader(Shader.FRAGMENT);
 
-    private Liszt<Element> _elements = new Liszt<>(new Element[]{
-            new Element(new int[]{2, 1, 0}),
-            new Element(new int[]{0, 1, 3})
-    });
-
+    /**
+     * Takes the content from default.glsl shader file that fits the input.
+     * @param type The type of shader that should be defined.
+     * @return The correct content for the shader type.
+     */
     private String defineShader(Shader type) {
         return FileService.get_instance().getContent(
                 Program.get_path() + "\\assets\\shaders\\default.glsl"
@@ -56,6 +63,66 @@ public class LevelEditorScene extends Scene implements IScene {
         }].replace(type.get_value() + "\r\n","");
     }
 
+    /**
+     * The id that is created for the vertexes.
+     * Is generated from gl.
+     */
+    private int _vertexID;
+
+    /**
+     * The id that is created for the fragments.
+     * Is generated from gl.
+     */
+    private int _fragmentID;
+
+    /**
+     * The id that is created for the program of shaders.
+     * Is generated from gl.
+     */
+    private int _program;
+
+    /**
+     * The id that is created for the vertexes to the screen.
+     * Is generated from gl.
+     */
+    private int _vertexArrayObjectID;
+
+    /**
+     * The id that is created for thebuffer of vertexes.
+     * Is generated from gl.
+     */
+    private int _vertexBufferObjectID;
+
+    /**
+     * The id that is created for the buffer of elements.
+     * Is generated from gl.
+     */
+    private int _elementBufferObjectID;
+
+    /**
+     * The preset of vertexes for this scene,
+     * with both positions and colors.
+     */
+    private Liszt<Vertex> _vertexes = new Liszt<>(new Vertex[]{
+            new Vertex(new float[]{0.5f, -0.5f, 0.0f}, new float[]{1.0f, 0.0f, 0.0f, 1.0f}),
+            new Vertex(new float[]{-0.5f, 0.5f, 0.0f}, new float[]{0.0f, 1.0f, 0.0f, 1.0f}),
+            new Vertex(new float[]{0.5f, 0.5f, 0.0f}, new float[]{0.0f, 0.0f, 1.0f, 1.0f}),
+            new Vertex(new float[]{-0.5f, -0.5f, 0.0f}, new float[]{1.0f, 1.0f, 0.0f, 1.0f})
+    });
+
+    /**
+     * The preset of elements for this scene,
+     * consists of the vertexes.
+     */
+    private FragmentCollection _fragmentCollection = new FragmentCollection(new Liszt<>(new Fragment[]{
+            new Fragment(new int[]{2, 1, 0}),
+            new Fragment(new int[]{0, 1, 3})
+        })
+    );
+
+    /**
+     * After creation, it will write a message to the screen.
+     */
     public LevelEditorScene() {
         Printer.get_instance().print("This is editor");
     }
@@ -63,7 +130,7 @@ public class LevelEditorScene extends Scene implements IScene {
     @Override
     public void init() {
         initiateVertex();
-        initiateFragment();
+        initiateFragments();
         linkProgram();
         initGPU();
     }
@@ -82,7 +149,7 @@ public class LevelEditorScene extends Scene implements IScene {
             public Integer get() {
                 int length = 0;
 
-                for (Element element : _elements)
+                for (Fragment element : _fragmentCollection.get_fragments())
                     length += element.get_nodes().length;
 
                 return length;
@@ -93,10 +160,14 @@ public class LevelEditorScene extends Scene implements IScene {
         glUseProgram(0);
     }
 
+    /**
+     * Initialises the different objects, that is needed for the GPU.
+     * Which is performed by many other private methods.
+     */
     private void initGPU() {
-        createVertexArrayObject();
-        createVertexBufferObject(createFloatBuffer());
-        createElementBufferObject(createIndices());
+        generateVertexArrayObject();
+        generateVertexBufferObject(generateFloatBuffer());
+        generateElementBufferObject(createIndices());
 
         int positionsSize = 3, colorSize = 4, floatSizeBytes = 4, vertexSizeBytes = (positionsSize + colorSize) * floatSizeBytes;
         glVertexAttribPointer(0, positionsSize, GL_FLOAT, false, vertexSizeBytes, 0);
@@ -106,12 +177,17 @@ public class LevelEditorScene extends Scene implements IScene {
         glEnableVertexAttribArray(1);
     }
 
-    private void createVertexArrayObject() {
+    /**
+     * Generates and binds the VertexArrayObject.
+     * The id is also initialised.
+     */
+    private void generateVertexArrayObject() {
         _vertexArrayObjectID = glGenVertexArrays();
         glBindVertexArray(_vertexArrayObjectID);
     }
 
-    private FloatBuffer createFloatBuffer() {
+    /** Generates the vertexBuffer with the vertexes values. */
+    private FloatBuffer generateFloatBuffer() {
         FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(new Supplier<Integer>() {
             @Override
             public Integer get() {
@@ -123,96 +199,64 @@ public class LevelEditorScene extends Scene implements IScene {
                 return length;
             }
         }.get());
-        vertexBuffer.put(vertexIntoGraphicFormat()).flip();
+        vertexBuffer.put(VertexUtility.vertexIntoGraphicFormat(_vertexes)).flip();
 
         return vertexBuffer;
     }
 
-    private void createVertexBufferObject(FloatBuffer vertexBuffer) {
+    /**
+     * Vertex buffer is generated, binded with the data.
+     * @param vertexBuffer The data to be binded.
+     */
+    private void generateVertexBufferObject(FloatBuffer vertexBuffer) {
         _vertexBufferObjectID = glGenBuffers();
         glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferObjectID);
         glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
     }
 
-    private void createElementBufferObject(IntBuffer elementBuffer) {
+    /**
+     * Element buffer is generated, binded with the data.
+     * @param elementBuffer The data to be binded.
+     */
+    private void generateElementBufferObject(IntBuffer elementBuffer) {
         _elementBufferObjectID = glGenBuffers();
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _elementBufferObjectID);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, elementBuffer, GL_STATIC_DRAW);
     }
 
+    /**
+     * Indices are created from the fragments.
+     * Afterwards put into the element buffer.
+     * @return The element buffer with the created indices.
+     */
     private IntBuffer createIndices() {
-        int amountOfElements = new Supplier<Integer>() {
-            @Override
-            public Integer get() {
-                int length = 0;
-
-                for (Element element : _elements)
-                    length += element.get_nodes().length;
-
-                return length;
-            }
-        }.get();
-        IntBuffer elementBuffer = BufferUtils.createIntBuffer(amountOfElements);
-
-        int[] elements = new int[amountOfElements];
-        int elementIndex = 0;
-
-        for (Element element : _elements) {
-            for (int i = 0; i < element.get_nodes().length; i++) {
-                elements[elementIndex] = element.get_node(i);
-                elementIndex++;
-            }
-        }
-
-        elementBuffer.put(elements).flip();
+        IntBuffer elementBuffer = BufferUtils.createIntBuffer(_fragmentCollection.amount());
+        elementBuffer.put(FragmentUtility.elementGraphicFormat(_fragmentCollection)).flip();
 
         return elementBuffer;
     }
 
-    public float[] vertexIntoGraphicFormat() {
-        float[] data = new float[new Supplier<Integer>() {
-            @Override
-            public Integer get() {
-                int length = 0;
-
-                for (Vertex vertex : _vertexes)
-                    length += vertex.get_positions().length + vertex.get_colors().length;
-
-                return length;
-            }
-        }.get()];
-
-        int dataIndex = 0;
-
-        for (Vertex vertex : _vertexes) {
-            for (int i = 0; i < vertex.get_positions().length + vertex.get_colors().length; i++) {
-                data[dataIndex] = i < 3
-                        ? vertex.get_positions()[i]
-                        : vertex.get_colors()[i - 3];
-                dataIndex++;
-            }
-        }
-
-        return data;
-    }
-
+    /** Initiates Vertexes and checks if it is a success. */
     private void initiateVertex() {
         _vertexID = glCreateShader(GL_VERTEX_SHADER);
         passShaderSourceToGPU(_vertexID);
         checkInitiationStatus(_vertexID, "Vertex");
     }
 
-    private void initiateFragment() {
+    /** Initiates Fragments and checks if it is a success. */
+    private void initiateFragments() {
         _fragmentID = glCreateShader(GL_FRAGMENT_SHADER);
         passShaderSourceToGPU(_fragmentID);
         checkInitiationStatus(_fragmentID, "Fragment");
     }
 
+    /** Passes the sources of default.glsl into the shader sources. Afterwards compiles it.*/
     private void passShaderSourceToGPU(int id) {
         glShaderSource(id, id == _vertexID ? _vertexSource : _fragmentSource);
         glCompileShader(id);
     }
 
+    /** The program is created before linked and its status is checked. */
     private void linkProgram() {
         _program = glCreateProgram();
         glAttachShader(_program, _vertexID);
@@ -221,6 +265,11 @@ public class LevelEditorScene extends Scene implements IScene {
         checkInitiationStatus(_program, "program link");
     }
 
+    /**
+     * Will check the status of various initialisations.
+     * @param id The id of the object to be checked.
+     * @param unit Is used to describe to the Printer what unit there was a issue with.
+     */
     private void checkInitiationStatus(int id, String unit) {
         boolean isProgram = id == _program;
 
