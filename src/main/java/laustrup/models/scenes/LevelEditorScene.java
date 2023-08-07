@@ -1,6 +1,7 @@
 package laustrup.models.scenes;
 
 import laustrup.Program;
+import laustrup.models.graphic.Shader;
 import laustrup.models.graphic.fragment.Fragment;
 import laustrup.models.graphic.Vertex;
 import laustrup.models.graphic.fragment.FragmentCollection;
@@ -25,35 +26,37 @@ import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 public class LevelEditorScene extends Scene implements IScene {
 
     /** Defines the options of Shaders. */
-    private enum Shader {
+    private enum ShaderTypes {
         VERTEX("vertex"),
         FRAGMENT("fragment");
 
         @Getter
         public String _value;
-        Shader(String value) {
+        ShaderTypes(String value) {
             _value = value;
         }
     }
 
-    /**
-     * The source of a Vertex.
-     * Is defined from the default.glsl shader file.
-     */
-    private final String _vertexSource = defineShader(Shader.VERTEX);
+    private Shader _shader = new Shader(Program.get_path() + "\\assets\\shaders\\default.glsl");
 
     /**
      * The source of a Vertex.
      * Is defined from the default.glsl shader file.
      */
-    private final String _fragmentSource = defineShader(Shader.FRAGMENT);
+    private final String _vertexSource = defineShader(ShaderTypes.VERTEX);
+
+    /**
+     * The source of a Vertex.
+     * Is defined from the default.glsl shader file.
+     */
+    private final String _fragmentSource = defineShader(ShaderTypes.FRAGMENT);
 
     /**
      * Takes the content from default.glsl shader file that fits the input.
      * @param type The type of shader that should be defined.
      * @return The correct content for the shader type.
      */
-    private String defineShader(Shader type) {
+    private String defineShader(ShaderTypes type) {
         return FileService.get_instance().getContent(
                 Program.get_path() + "\\assets\\shaders\\default.glsl"
         ).split("#type ")[switch (type) {
@@ -120,18 +123,14 @@ public class LevelEditorScene extends Scene implements IScene {
         })
     );
 
-    /**
-     * After creation, it will write a message to the screen.
-     */
+    /** Empty constructor. */
     public LevelEditorScene() {
-        Printer.get_instance().print("This is editor");
+
     }
 
     @Override
     public void init() {
-        initiateVertex();
-        initiateFragments();
-        linkProgram();
+        _shader.compile();
         initGPU();
     }
 
@@ -139,7 +138,7 @@ public class LevelEditorScene extends Scene implements IScene {
     public void update(float dt) {
         _fps = 1.0f/dt;
 
-        glUseProgram(_program);
+        _shader.use();
         glBindVertexArray(_vertexArrayObjectID);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
@@ -157,7 +156,7 @@ public class LevelEditorScene extends Scene implements IScene {
         }.get(), GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
-        glUseProgram(0);
+        _shader.detach();
     }
 
     /**
@@ -234,51 +233,5 @@ public class LevelEditorScene extends Scene implements IScene {
         elementBuffer.put(FragmentUtility.elementGraphicFormat(_fragmentCollection)).flip();
 
         return elementBuffer;
-    }
-
-    /** Initiates Vertexes and checks if it is a success. */
-    private void initiateVertex() {
-        _vertexID = glCreateShader(GL_VERTEX_SHADER);
-        passShaderSourceToGPU(_vertexID);
-        checkInitiationStatus(_vertexID, "Vertex");
-    }
-
-    /** Initiates Fragments and checks if it is a success. */
-    private void initiateFragments() {
-        _fragmentID = glCreateShader(GL_FRAGMENT_SHADER);
-        passShaderSourceToGPU(_fragmentID);
-        checkInitiationStatus(_fragmentID, "Fragment");
-    }
-
-    /** Passes the sources of default.glsl into the shader sources. Afterwards compiles it.*/
-    private void passShaderSourceToGPU(int id) {
-        glShaderSource(id, id == _vertexID ? _vertexSource : _fragmentSource);
-        glCompileShader(id);
-    }
-
-    /** The program is created before linked and its status is checked. */
-    private void linkProgram() {
-        _program = glCreateProgram();
-        glAttachShader(_program, _vertexID);
-        glAttachShader(_program, _fragmentID);
-        glLinkProgram(_program);
-        checkInitiationStatus(_program, "program link");
-    }
-
-    /**
-     * Will check the status of various initialisations.
-     * @param id The id of the object to be checked.
-     * @param unit Is used to describe to the Printer what unit there was a issue with.
-     */
-    private void checkInitiationStatus(int id, String unit) {
-        boolean isProgram = id == _program;
-
-        if (isProgram ? glGetProgrami(id, GL_LINK_STATUS) == GL_FALSE : glGetShaderi(id,GL_COMPILE_STATUS) == GL_FALSE) {
-            Printer.get_instance().print("Error occurred when initiating " + unit + "...",
-                new InstantiationException(
-                    "\n" + (isProgram ? glGetProgramInfoLog(_program, glGetProgrami(id, GL_LINK_STATUS)) : glGetShaderInfoLog(id, glGetShaderi(id, GL_INFO_LOG_LENGTH))))
-            );
-            assert false : "";
-        }
     }
 }
